@@ -17,13 +17,13 @@ int main(int, char**) {
 	ifstream ifs_time; //TODO: rename these
 
 	// Open the binary file that contains joint data
-	ifs_joint.open("C:\\KinectData\\Skel\\Joint_Position.binary", ios::in | ios::binary);
+	ifs_joint.open("C:\\KinectData\\Backup\\Backup2\\Skel\\Joint_Position.binary", ios::in | ios::binary);
 	if (ifs_joint.is_open()) {
 		cout << "yay" << endl;
 	}
 	
 	// Open the file that contains timing data
-	ifs_time.open("C:\\KinectData\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
+	ifs_time.open("C:\\KinectData\\Backup\\Backup2\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
 	if (ifs_time.is_open()) {
 		cout << "yay2" << endl;
 	}
@@ -43,9 +43,6 @@ int main(int, char**) {
 		int jointFrameLength = sizeof(float)* NUM_SKEL_TRACKED * NUM_SKEL_JOINTS * NUM_JOINT_DIMENSIONS;
 		int timeFrameLength = sizeof(long long)* 5;
 
-		// Keep track of classification
-		int prevClass = 0;
-		int curClass = 0;
 		int k = 0;
 
 		while (!ifs_joint.eof() && !ifs_time.eof()) { //TODO: figure out why this goes 1 iteration too long
@@ -68,13 +65,6 @@ int main(int, char**) {
 			}
 			k++;
 
-			curClass = classify(joints);
-
-			if (curClass != prevClass) {
-				printClass(curClass);
-				prevClass = curClass;
-			}
-
 			// Matrices for display (image)
 			int imsize = 300;
 			Mat edges = Mat::eye(imsize, imsize, CV_8UC3); //TODO: doesnt need to be eye
@@ -96,15 +86,18 @@ int main(int, char**) {
 
 	//All joints
 	Mat samples = Mat(169, NUM_SKEL_JOINTS * NUM_JOINT_DIMENSIONS, CV_32F, allPositions);
-	float labelArr[169];
-	fill_n(labelArr, 169, -1.0);
-	for (int i = 50; i < 100; ++i) {
-		labelArr[i] = 1.0;
+	float labelArr[169]; //TODO: make robust for any size files
+	fill_n(labelArr, 169, 1.0);
+	for (int i = 85; i < 122; ++i) {
+		labelArr[i] = 2.0;
 	}
+	cout << endl;
 	Mat labels = Mat(169, 1, CV_32FC1, labelArr);
 	for (int i = 0; i < 169; ++i) {
-		cout << labels.at<float>(i) << endl;
+		//cout << labels.at<float>(i) << ", ";
+		printf("%2.0f, ", labels.at<float>(i));
 	}
+	cout << endl;
 
 	// Set up SVM's parameters
 	CvSVMParams params;
@@ -114,6 +107,16 @@ int main(int, char**) {
 
 	CvSVM SVM;
 	SVM.train(samples, labels, Mat(), Mat(), params);
+
+	cout << endl << endl << "Prediction results: " << endl << endl;
+
+	float prevClass = 0;
+	float response = 0;
+
+	for (int i = 0; i < samples.size().height; ++i) {
+		response = SVM.predict(samples.row(i));
+		printf("%2.0f, ", response);
+	}
 
 	char waitin;
 	cin >> waitin;
