@@ -23,9 +23,9 @@ int main(int, char**) {
 	ofstream ofs_out_posi, ofs_out_orie, ofs_out_time;
 
 	// Open the binary files that contain the data
-	ifs_joint_pos.open("D:\\ThesisData\\Data1\\Arm circle\\Position2", ios::in | ios::binary);
-	ifs_joint_orie.open("D:\\ThesisData\\Data1\\Arm circle\\Orientation2", ios::in | ios::binary);
-	ifs_time.open("D:\\ThesisData\\Data1\\Arm circle\\Time2", ios::in | ios::binary);
+	ifs_joint_pos.open("D:\\ThesisData\\Data1\\Arm circle\\Position1", ios::in | ios::binary);
+	ifs_joint_orie.open("D:\\ThesisData\\Data1\\Arm circle\\Orientation1", ios::in | ios::binary);
+	ifs_time.open("D:\\ThesisData\\Data1\\Arm circle\\Time1", ios::in | ios::binary);
 	if (ifs_time.is_open() && ifs_joint_pos.is_open() && ifs_joint_orie.is_open()) {
 		cout << "yay x3" << endl;
 	}

@@ -35,11 +35,11 @@ int main(int, char**) {
 	float positions[NUM_SKEL_TRACKED][NUM_SKEL_JOINTS][NUM_JOINT_DIMS];
 	float orientations[NUM_SKEL_TRACKED][NUM_SKEL_JOINTS][NUM_JOINT_DIMS];
 	// Array to store time data
-	long long times[5] = { 0 };
+	long long times[NUM_TIME_DIMS] = { 0 };
 	// Array to store cumulative data over multiple frames
 	float allPositions[170][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
 	float allOrientations[170][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
-	float allTimes[170][NUM_TIME_DIMS] = { 0 };
+	long long allTimes[170][NUM_TIME_DIMS] = { 0 };
 	// Chose a large number suitable for sample frame sizes for this project. If larger number of frames needed, consider using dynamic allocation.
 
 	String fileOutBaseNamePosition = "D:\\ThesisData\\Data1\\Arm circle\\Position";
@@ -69,9 +69,24 @@ int main(int, char**) {
 				if (frameNum < 169) { //TODO: fix hardcoding
 					memcpy(&allPositions[frameNum], &positions[2][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
 					memcpy(&allOrientations[frameNum], &orientations[2][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
-					memcpy(&allTimes[frameNum], times, sizeof(float)* NUM_TIME_DIMS);
+					memcpy(&allTimes[frameNum], times, timeFrameLength);
 				}
 				frameNum++;
+			}
+
+			if (frameNum < 3) {
+				cout << endl << "        orientations: " << endl;
+				for (int i = 0; i < NUM_SKEL_JOINTS; ++i) {
+					for (int j = 0; j < NUM_JOINT_DIMS; ++j) {
+						cout << orientations[2][i][j] << " ";
+					}
+					cout << endl;
+				}
+				cout << "        times: " << endl;
+				for (int i = 0; i < 5; ++i) {
+					cout << times[i] << " ";
+				}
+				cout << endl;
 			}
 
 			// 2d openCV Mat to contain joint data
@@ -108,13 +123,12 @@ int main(int, char**) {
 				ofs_out_orie.write((char *)allOrientations, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 
 				ofs_out_time.open(getFileName(fileOutBaseNameTime, numFilesWritten), ios_base::out | ios::binary);
-				ofs_out_time.write((char *)allTimes, sizeof(float) * NUM_TIME_DIMS * frameNum);
+				ofs_out_time.write((char *)allTimes, timeFrameLength * frameNum);
 
 				//Do some kind of mem-clear on allPoisitions, allOrientations, allTimes
 				memset((char *)allPositions, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 				memset((char *)allOrientations, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 				memset((char *)allTimes, 0, sizeof(float) * NUM_TIME_DIMS * frameNum);
-
 				frameNum = 0;
 
 				ofs_out_posi.close();
@@ -146,7 +160,7 @@ int main(int, char**) {
 			ofs_out_orie.write((char *)allOrientations, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 
 			ofs_out_time.open(getFileName(fileOutBaseNameTime, numFilesWritten), ios_base::out | ios::binary);
-			ofs_out_time.write((char *)allTimes, sizeof(float) * NUM_TIME_DIMS * frameNum);
+			ofs_out_time.write((char *)allTimes, timeFrameLength * frameNum);
 
 			ofs_out_posi.close();
 			ofs_out_orie.close();
