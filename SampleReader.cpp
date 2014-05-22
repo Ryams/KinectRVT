@@ -5,22 +5,15 @@
 #define NUM_SKEL_JOINTS 20
 #define NUM_SKEL_TRACKED 6
 #define NUM_TIME_DIMS 5
-
+#define FRAME_CAP 200
 
 using namespace cv;
 using namespace std;
 
 
-String getFileName(const string &fileName, const int &fileNum) {
-	String fileout = fileName;
-	fileout += to_string(fileNum);
-	return fileout;
-}
-
 //TODO: Move most of the file data reading code to a new class/ file
 int main(int, char**) {
-	ifstream ifs_joint_pos, ifs_joint_orie, ifs_time; //TODO: rename these
-	ofstream ofs_out_posi, ofs_out_orie, ofs_out_time;
+	ifstream positionInputFileStream, orientationInputFileStream, timeInputFileStream;
 
 	// 3d array to store joint data
 	float positions[NUM_SKEL_JOINTS][NUM_JOINT_DIMS];
@@ -28,9 +21,9 @@ int main(int, char**) {
 	// Array to store time data
 	long long times[5] = { 0 };
 	// Array to store cumulative data over multiple frames
-	float allPositions[170][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
-	float allOrientations[170][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
-	float allTimes[170][NUM_TIME_DIMS] = { 0 };
+	float allPositions[FRAME_CAP][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
+	float allOrientations[FRAME_CAP][NUM_SKEL_JOINTS * NUM_JOINT_DIMS] = { 0 }; //TODO: fix hardcoding.
+	float allTimes[FRAME_CAP][NUM_TIME_DIMS] = { 0 };
 	// Chose a large number suitable for sample frame sizes for this project. If larger number of frames needed, consider using dynamic allocation.
 
 	char exerciseType = 'j';
@@ -49,12 +42,6 @@ int main(int, char**) {
 		exerciseTypeName = "Arm circle";
 	}
 
-	//TODO: ask the user at the start if they are looking at arm circle, arm curl, or jumping jacks,
-	// and construct these base file names depending on that. Also there should be a loop around this and
-	// everything that follows updating the number of data person, ie Data1, Data2, and so on.
-	// The file search should proceed beyond the current person's data directory when reading in samples.
-	
-
 	int directoryNum = 0;
 	int numFilesRead = 0; // TODO: Needs to be reset every time we change directories.
 	char waitin = 'y';
@@ -72,10 +59,10 @@ int main(int, char**) {
 			String fileNameTime = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Time" + to_string(numFilesRead);
 
 			// Open the binary files that contain the data
-			ifs_joint_pos.open(fileNamePosition, ios::in | ios::binary);
-			ifs_joint_orie.open(fileNameOrientation, ios::in | ios::binary);
-			ifs_time.open(fileNameTime, ios::in | ios::binary);
-			if (ifs_time.is_open() && ifs_joint_pos.is_open() && ifs_joint_orie.is_open()) {
+			positionInputFileStream.open(fileNamePosition, ios::in | ios::binary);
+			orientationInputFileStream.open(fileNameOrientation, ios::in | ios::binary);
+			timeInputFileStream.open(fileNameTime, ios::in | ios::binary);
+			if (timeInputFileStream.is_open() && positionInputFileStream.is_open() && orientationInputFileStream.is_open()) {
 				cout << "All three files opened okay." << endl;
 				noMoreFilesInDirectory = false;
 			}
@@ -88,21 +75,21 @@ int main(int, char**) {
 				break;
 			}
 
-			if (ifs_joint_pos && ifs_time && ifs_joint_orie) {
+			if (positionInputFileStream && timeInputFileStream && orientationInputFileStream) {
 				int jointFrameLength = sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS;
 				int timeFrameLength = sizeof(long long)* NUM_TIME_DIMS;
 				int frameNum = 0;
 
-				while (!ifs_joint_pos.eof() && !ifs_time.eof() && !ifs_joint_orie.eof()) { //TODO: figure out why this goes 1 iteration too long
+				while (!positionInputFileStream.eof() && !timeInputFileStream.eof() && !orientationInputFileStream.eof()) { //TODO: figure out why this goes 1 iteration too long
 					// Read in one frame of skeleton data (includes 6 skeletons)
-					ifs_joint_pos.read((char *)positions, jointFrameLength);
-					ifs_joint_orie.read((char *)orientations, jointFrameLength);
-					ifs_time.read((char *)times, timeFrameLength);
+					positionInputFileStream.read((char *)positions, jointFrameLength);
+					orientationInputFileStream.read((char *)orientations, jointFrameLength);
+					timeInputFileStream.read((char *)times, timeFrameLength);
 
-					if (!ifs_joint_pos || !ifs_time || !ifs_joint_orie) {
-						cout << "error: only " << ifs_joint_pos.gcount() << " could be read from pos" << endl;
-						cout << "error: only " << ifs_joint_orie.gcount() << " could be read from orie" << endl;
-						cout << "error: only " << ifs_time.gcount() << " could be read from time" << endl;
+					if (!positionInputFileStream || !timeInputFileStream || !orientationInputFileStream) {
+						cout << "error: only " << positionInputFileStream.gcount() << " could be read from pos" << endl;
+						cout << "error: only " << orientationInputFileStream.gcount() << " could be read from orie" << endl;
+						cout << "error: only " << timeInputFileStream.gcount() << " could be read from time" << endl;
 					}
 					else {
 						// Copy joint data into the accumulator buffer
@@ -152,9 +139,9 @@ int main(int, char**) {
 					char inChar = waitKey(30); // 30 frames per second?
 				}
 
-				ifs_joint_pos.close();
-				ifs_joint_orie.close();
-				ifs_time.close();
+				positionInputFileStream.close();
+				orientationInputFileStream.close();
+				timeInputFileStream.close();
 			}
 
 			cout << "Go to next file? ";
