@@ -6,7 +6,6 @@
 #define NUM_SKEL_TRACKED 6
 #define NUM_TIME_DIMS 5
 
-
 using namespace cv;
 using namespace std;
 
@@ -22,13 +21,44 @@ int main(int, char**) {
 	ifstream ifs_joint_pos, ifs_joint_orie, ifs_time; //TODO: rename these
 	ofstream ofs_out_posi, ofs_out_orie, ofs_out_time;
 
+	String exerciseType;
+	int dataDirectoryNum = 1;
+	int skelTrackNum = 2;
+	char waitin;
+
+	cout << "Enter 'j' jumping jack, 'i' arm circle, 'u' arm curl" << endl; //TODO: possible error checking on all these inputs
+	std::cin >> waitin;
+
+	if (waitin == 'j') {
+		exerciseType = "Jumping jack";
+	}
+	else if (waitin == 'u') {
+		exerciseType = "Arm curl";
+	}
+	else {
+		exerciseType = "Arm circle";
+	}
+
+	cout << "Enter the number of the data directory" << endl;
+	std::cin >> dataDirectoryNum;
+
+	cout << "Enter the number of the skeleton tracking number" << endl;
+	std::cin >> skelTrackNum;
+
 	// Open the binary files that contain the data
-	ifs_joint_pos.open("C:\\KinectData\\Backup\\Backup2\\Skel\\Joint_Position.binary", ios::in | ios::binary);
-	//ifs_joint_pos.open("D:\\ThesisData\\Data1\\Jumping jack\\Skel\\Joint_Position.binary", ios::in | ios::binary);
-	ifs_joint_orie.open("C:\\KinectData\\Backup\\Backup2\\Skel\\Joint_Orientation.binary", ios::in | ios::binary);
-	ifs_time.open("C:\\KinectData\\Backup\\Backup2\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
+	ifs_joint_pos.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary", ios::in | ios::binary);
+	cout << "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary" << endl;
+	ifs_joint_orie.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Orientation.binary", ios::in | ios::binary);
+	ifs_time.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
 	if (ifs_time.is_open() && ifs_joint_pos.is_open() && ifs_joint_orie.is_open()) {
 		cout << "yay x3" << endl;
+		cout << "Welcome to the file writer. Press any key to proceed to the next frame." << endl
+			<< "Press 's' to save the previous frames, and 'd' to discard them." << endl;
+	}
+	else {
+		cout << "Could not open all the files. Please check that you have entered the correct information." << endl;
+		std::cin >> waitin;
+		return 0;
 	}
 
 	// 3d array to store joint data
@@ -42,9 +72,9 @@ int main(int, char**) {
 	long long allTimes[170][NUM_TIME_DIMS] = { 0 };
 	// Chose a large number suitable for sample frame sizes for this project. If larger number of frames needed, consider using dynamic allocation.
 
-	String fileOutBaseNamePosition = "D:\\ThesisData\\Data1\\Arm circle\\Position";
-	String fileOutBaseNameOrientation = "D:\\ThesisData\\Data1\\Arm circle\\Orientation";
-	String fileOutBaseNameTime = "D:\\ThesisData\\Data1\\Arm circle\\Time";
+	String fileOutBaseNamePosition = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Position";
+	String fileOutBaseNameOrientation = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Orientation";
+	String fileOutBaseNameTime = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Time";
 
 	int numFilesWritten = 0;
 
@@ -67,30 +97,15 @@ int main(int, char**) {
 			else {
 				// Copy joint data into the accumulator buffer
 				if (frameNum < 169) { //TODO: fix hardcoding
-					memcpy(&allPositions[frameNum], &positions[2][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
-					memcpy(&allOrientations[frameNum], &orientations[2][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
+					memcpy(&allPositions[frameNum], &positions[skelTrackNum][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
+					memcpy(&allOrientations[frameNum], &orientations[skelTrackNum][0][0], sizeof(float)* NUM_SKEL_JOINTS * NUM_JOINT_DIMS);
 					memcpy(&allTimes[frameNum], times, timeFrameLength);
 				}
 				frameNum++;
 			}
 
-			if (frameNum < 3) {
-				cout << endl << "        orientations: " << endl;
-				for (int i = 0; i < NUM_SKEL_JOINTS; ++i) {
-					for (int j = 0; j < NUM_JOINT_DIMS; ++j) {
-						cout << orientations[2][i][j] << " ";
-					}
-					cout << endl;
-				}
-				cout << "        times: " << endl;
-				for (int i = 0; i < 5; ++i) {
-					cout << times[i] << " ";
-				}
-				cout << endl;
-			}
-
 			// 2d openCV Mat to contain joint data
-			Mat joints = Mat(NUM_SKEL_JOINTS, NUM_JOINT_DIMS, CV_32F, &positions[2][0][0]);
+			Mat joints = Mat(NUM_SKEL_JOINTS, NUM_JOINT_DIMS, CV_32F, &positions[skelTrackNum][0][0]);
 			
 
 			// Matrices for display (image)
@@ -146,7 +161,7 @@ int main(int, char**) {
 		}
 		cout << endl << "would you like to save the last set of frames? Press 's' if yes." << endl;
 		char waitin;
-		cin >> waitin;
+		std::cin >> waitin;
 		if (waitin == 's') {
 			++numFilesWritten;
 			cout << "Writing file " << numFilesWritten << ": " << endl << getFileName(fileOutBaseNamePosition, numFilesWritten) << endl
@@ -166,7 +181,7 @@ int main(int, char**) {
 			ofs_out_orie.close();
 			ofs_out_time.close();
 		}
-		cin >> waitin;
+		//std::cin >> waitin;
 	}
 
 	ifs_joint_pos.close();
