@@ -4,7 +4,7 @@
 #define NUM_SKEL_JOINTS 20
 #define NUM_SKEL_TRACKED 6
 #define NUM_TIME_DIMS 5
-#define FRAME_CAP 400
+#define FRAME_CAP 1000
 #define IMZISE 300
 
 void displayJoints(float *positions);
