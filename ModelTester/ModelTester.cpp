@@ -112,20 +112,49 @@ void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
 	float prevClass = 0;
 	float response = 0;
 	
-	//Mat responses;
-	for (int i = 0; i < testSet.size().height; ++i) { // TODO: use testLabels to get classification rate
-		response = svm.predict(testSet.row(i));
-		printf("%2.0f, ", response);
-		//responses = 
+	Mat responses;
+	//for (int i = 0; i < testSet.size().height; ++i) { // TODO: use testLabels to get classification rate
+		//response = svm.predict(testSet.row(i));
+		//printf("%2.0f, ", response);
+	//}
+	svm.predict(testSet, responses);
+	for (int i = 0; i < responses.size().height; ++i) {
+		cout << responses.at<float>(i) << " ";
 	}
 
 	cout << endl << endl;
 
 	for (int i = 0; i < testLabels.size().height; ++i) {
-		printf("%2.0f, ", testLabels.at<float>(i));
+		cout << testLabels.at<float>(i) << " ";
 	}
 
+	cout << endl << endl;
 
+	Mat cmp(responses.size().height, responses.size().width, CV_32F);
+	for (int i = 0; i < cmp.size().height; ++i) {
+		cmp.at<float>(i) = (responses.at<float>(i) == testLabels.at<float>(i) ? 0 : 1);
+		cout << cmp.at<float>(i) << " ";
+	}
+
+	Mat confusionMat = Mat::zeros(4, 4, CV_32S);
+	for (int i = 0; i < responses.size().height; ++i) {
+		confusionMat.at<int>(testLabels.at<float>(i), responses.at<float>(i))++;
+	}
+	cout << "confusion matrix: " << endl;
+	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
+		for (int j = 0; j < 4; ++j) {
+			printf("%2d ", confusionMat.at<int>(i, j));
+		}
+		cout << endl;
+	}
+
+	int numCorrect = 0;
+	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
+		numCorrect += confusionMat.at<int>(i, i);
+	}
+	cout << "Correct: " << numCorrect << endl;
+	cout << "Total: " << responses.size().height << endl;
+	cout << "Accuracy: " << numCorrect * 1.0 / responses.size().height << endl;
 }
 
 int main(int, char**) {
