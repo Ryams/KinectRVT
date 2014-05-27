@@ -5,12 +5,13 @@
 #define NUM_SKEL_JOINTS 20
 #define NUM_SKEL_TRACKED 6
 #define NUM_TIME_DIMS 5
+#define TEST_SET_FRACTION .25
 
 using namespace cv;
 using namespace std;
 
 // Fill in sample mats with all the accumulated data.
-void getSamples(Mat &m1, Mat &m2, Mat &m3) {
+void getSamples(Mat &m1, Mat &m2, Mat &m3, Mat &labels) {
 	char exerciseType = 'j';
 	std::cout << "What type of exercise? 'u' arm curl, 'i' arm circle, 'j' jumping jack" << endl;
 	std::cin >> exerciseType;
@@ -36,6 +37,8 @@ void getSamples(Mat &m1, Mat &m2, Mat &m3) {
 	fs.getFirstTopLevelNode() >> m2;
 	fs.open("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\ori_samples.xml", FileStorage::READ);
 	fs.getFirstTopLevelNode() >> m3;
+	fs.open("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\all_labels.xml", FileStorage::READ);
+	fs.getFirstTopLevelNode() >> labels;
 	fs.release();
 }
 
@@ -47,35 +50,98 @@ void getFeatureVec(Mat &features, const Mat &timeMat, const Mat &posMat, const M
 	oriMat.copyTo(features);
 }
 
-void getTrainTestSets(Mat &train, Mat &test, Mat &features) {
-	
-
-	Mat indices(features.size().height, 1, CV_32S);
-	cout << "height: " << features.size().height << "width: " << features.size().width << endl;
-	cout << "height: " << indices.size().height << "width: " << indices.size().width << endl;
+void getTrainTestSets(Mat &train, Mat &test, Mat &testLabels, Mat &trainLabels, Mat &featureSamples, Mat &labels) {
+	Mat indices(featureSamples.size().height, 1, CV_32S);
 	for (int i = 0; i < indices.size().height; ++i) {
 		indices.at<int>(i) = i;
-		cout << indices.at<int>(i) << " ";
+	}
+
+	randShuffle(indices, 3);
+
+	int cutoff = featureSamples.size().height * TEST_SET_FRACTION;
+	Mat testIndices = indices.rowRange(0, cutoff); //TODO: be careful because this Mat header points to same data as indices
+	Mat trainIndices = indices.rowRange(cutoff, featureSamples.size().height);
+	/*cout << "height: " << testIndices.size().height << endl;
+	cout << "height: " << trainIndices.size().height << endl;
+	for (int i = 0; i < testIndices.size().height; ++i) {
+		cout << testIndices.at<int>(i) << " ";
+	}
+	cout << endl;
+	for (int i = 0; i < trainIndices.size().height; ++i) {
+		cout << trainIndices.at<int>(i) << " ";
+	}*/
+
+	cout << "testIndices height: " << testIndices.size().height << endl;
+	cout << "featureSamples height: " << featureSamples.size().height << endl;
+	test.create(testIndices.size().height, featureSamples.size().width, CV_32F);
+	testLabels.create(testIndices.size().height, 1, CV_32F);
+	for (int i = 0; i < testIndices.size().height; ++i) {
+		test.row(i) = (featureSamples.row(testIndices.at<int>(i)) + 0);
+		testLabels.row(i) = (labels.row(testIndices.at<int>(i)) + 0);
+		/*if (i < 100) {
+			for (int j = 0; j < testLabels.size().width; ++j) {
+				//cout << test.at<float>(i, j) << " ";
+				cout << testLabels.at<float>(i, j) << " ";
+			}
+			cout << endl << endl;
+		}*/
+	}
+
+	train.create(trainIndices.size().height, featureSamples.size().width, CV_32F);
+	trainLabels.create(trainIndices.size().height, 1, CV_32F);
+	for (int i = 0; i < trainIndices.size().height; ++i) {
+		train.row(i) = (featureSamples.row(trainIndices.at<int>(i)) + 0); //TODO: use copyTo instead
+		trainLabels.row(i) = (labels.row(trainIndices.at<int>(i)) + 0);
+	}
+
+}
+
+void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider combining train and test into one method, so can encapsulate even the cvstatmodel used
+	// Set up SVM's parameters
+	CvSVMParams params;
+	params.svm_type = CvSVM::C_SVC;
+	params.kernel_type = CvSVM::LINEAR;
+	params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+
+	svm.train(trainSet, trainLabels, Mat(), Mat(), params);
+}
+
+void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
+	std::cout << endl << endl << "Prediction results: " << endl << endl;
+
+	float prevClass = 0;
+	float response = 0;
+	
+	//Mat responses;
+	for (int i = 0; i < testSet.size().height; ++i) { // TODO: use testLabels to get classification rate
+		response = svm.predict(testSet.row(i));
+		printf("%2.0f, ", response);
+		//responses = 
 	}
 
 	cout << endl << endl;
-	randShuffle(indices, 3);
-	for (int i = 0; i < indices.size().height; ++i) {
-		cout << indices.at<int>(i) << " ";
+
+	for (int i = 0; i < testLabels.size().height; ++i) {
+		printf("%2.0f, ", testLabels.at<float>(i));
 	}
-	cout << endl;
+
+
 }
 
 int main(int, char**) {
-	Mat timeMat, posMat, oriMat;
-
-	getSamples(timeMat, posMat, oriMat);
+	Mat timeMat, posMat, oriMat, labels;
+	getSamples(timeMat, posMat, oriMat, labels);
 
 	Mat features;
 	getFeatureVec(features, timeMat, posMat, oriMat);
 
-	Mat trainSet, testSet;
-	getTrainTestSets(trainSet, testSet, features);
+	Mat trainSet, testSet, testLabels, trainLabels;
+	getTrainTestSets(trainSet, testSet, testLabels, trainLabels, features, labels);
+
+	CvSVM svm;
+	trainModel(trainSet, trainLabels, svm);
+
+	predictAll(testSet, testLabels, svm);
 
 	char in;
 	cin >> in;
