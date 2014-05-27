@@ -83,6 +83,8 @@ void getPosVelocityFeature(Mat &features, const Mat &timeMat, const Mat &posMat,
 	}
 }
 
+// Split the feature samples into training and test sets. This is done by randomizing indices for each row,
+// and splitting it according to the test set fraction.
 void getTrainTestSets(Mat &train, Mat &test, Mat &testLabels, Mat &trainLabels, Mat &featureSamples, Mat &labels) {
 	Mat indices(featureSamples.size().height, 1, CV_32S);
 	for (int i = 0; i < indices.size().height; ++i) {
@@ -111,6 +113,7 @@ void getTrainTestSets(Mat &train, Mat &test, Mat &testLabels, Mat &trainLabels, 
 
 }
 
+// Train the model. For now, svm is being used but later more models will be added as well.
 void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider combining train and test into one method, so can encapsulate even the cvstatmodel used
 	// Set up SVM's parameters
 	CvSVMParams params;
@@ -122,6 +125,7 @@ void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider
 	//svm.train_auto(trainSet, trainLabels, Mat(), Mat(), params);
 }
 
+// Generates responses (predictions) for the test set and outputs results.
 void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
 	std::cout << endl << endl << "Prediction results: " << endl << endl;
 	
@@ -154,6 +158,9 @@ void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
 	cout << "Accuracy: " << numCorrect * 1.0 / responses.size().height << endl;
 }
 
+// Get samples and labels from xml, then extract features,
+// shuffle and split the samples randomly intro training and test sets,
+// train the model, and predict outcomes from the test set, outputting classification rates.
 int main(int, char**) {
 	Mat timeMat, posMat, oriMat, labels;
 	getSamples(timeMat, posMat, oriMat, labels);
