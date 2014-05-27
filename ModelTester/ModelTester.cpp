@@ -119,6 +119,7 @@ void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider
 	params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
 
 	svm.train(trainSet, trainLabels, Mat(), Mat(), params);
+	//svm.train_auto(trainSet, trainLabels, Mat(), Mat(), params);
 }
 
 void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
@@ -126,33 +127,23 @@ void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
 	
 	Mat responses;
 	svm.predict(testSet, responses);
-	for (int i = 0; i < responses.size().height; ++i) {
-		cout << responses.at<float>(i) << " ";
-	}
+	cout << responses.t() << endl;
 
 	cout << endl << endl;
-	for (int i = 0; i < testLabels.size().height; ++i) {
-		cout << testLabels.at<float>(i) << " ";
-	}
-	cout << endl << endl;
+	cout << testLabels.t() << endl << endl;
 
 	Mat cmp(responses.size().height, responses.size().width, CV_32F);
 	for (int i = 0; i < cmp.size().height; ++i) {
 		cmp.at<float>(i) = (responses.at<float>(i) == testLabels.at<float>(i) ? 0 : 1);
-		cout << cmp.at<float>(i) << " ";
 	}
+	cout << cmp.t() << endl;
 
 	Mat confusionMat = Mat::zeros(4, 4, CV_32S);
 	for (int i = 0; i < responses.size().height; ++i) {
 		confusionMat.at<int>(testLabels.at<float>(i), responses.at<float>(i))++;
 	}
 	cout << endl << "confusion matrix: " << endl;
-	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
-		for (int j = 0; j < 4; ++j) {
-			printf("%2d ", confusionMat.at<int>(i, j));
-		}
-		cout << endl;
-	}
+	cout << confusionMat << endl;
 
 	int numCorrect = 0;
 	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
@@ -169,8 +160,7 @@ int main(int, char**) {
 
 	for (int i = 0; i < 3; ++i) { //TODO: no hardcoding
 		Mat features;
-		//getRawOriFeature(features, timeMat, posMat, oriMat);
-		getPosVelocityFeature(features, timeMat, posMat, oriMat);
+		getRawOriFeature(features, timeMat, posMat, oriMat);
 
 		Mat trainSet, testSet, testLabels, trainLabels;
 		getTrainTestSets(trainSet, testSet, testLabels, trainLabels, features, labels);
