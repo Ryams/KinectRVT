@@ -114,7 +114,7 @@ void getTrainTestSets(Mat &train, Mat &test, Mat &testLabels, Mat &trainLabels, 
 }
 
 // Train the model. For now, svm is being used but later more models will be added as well.
-void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider combining train and test into one method, so can encapsulate even the cvstatmodel used
+void trainSVMModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider combining train and test into one method, so can encapsulate even the cvstatmodel used
 	// Set up SVM's parameters
 	CvSVMParams params;
 	params.svm_type = CvSVM::C_SVC;
@@ -125,15 +125,23 @@ void trainModel(Mat &trainSet, Mat &trainLabels, CvSVM &svm) { // TODO: consider
 	//svm.train_auto(trainSet, trainLabels, Mat(), Mat(), params);
 }
 
-// Generates responses (predictions) for the test set and outputs results.
-void predictAll(Mat &testSet, Mat &testLabels, CvSVM &svm) {
-	std::cout << endl << endl << "Prediction results: " << endl << endl;
-	
-	Mat responses;
-	svm.predict(testSet, responses);
-	cout << responses.t() << endl;
+void trainKNNModel(Mat &trainSet, Mat &trainLabels, CvKNearest &knn) {
+	knn.train(trainSet, trainLabels);
+}
 
-	cout << endl << endl;
+// Generates responses (predictions) for the test set and outputs results.
+void predictSVM(Mat &testSet, Mat &testLabels, Mat &responses, CvSVM &svm) { //TODO: dont need test labels here
+	svm.predict(testSet, responses);
+}
+
+void predictKNN(Mat &testSet, Mat &testLabels, Mat &responses, CvKNearest &knn) { //TODO: dont need test labels here
+	knn.find_nearest(testSet, 10, responses, Mat(), Mat());
+}
+
+void outputResults(Mat &responses, Mat &testLabels) {
+	std::cout << endl << endl << "Prediction results: " << endl << endl;
+	cout << responses.t() << endl;
+	cout << endl;
 	cout << testLabels.t() << endl << endl;
 
 	Mat cmp(responses.size().height, responses.size().width, CV_32F);
@@ -172,10 +180,16 @@ int main(int, char**) {
 		Mat trainSet, testSet, testLabels, trainLabels;
 		getTrainTestSets(trainSet, testSet, testLabels, trainLabels, features, labels);
 
-		CvSVM svm;
-		trainModel(trainSet, trainLabels, svm);
+		//CvSVM svm;
+		//trainSVMModel(trainSet, trainLabels, svm);
 
-		predictAll(testSet, testLabels, svm);
+		CvKNearest knn;
+		trainKNNModel(trainSet, trainLabels, knn);
+
+		Mat responses;
+		//predictSVM(testSet, testLabels, responses, svm);
+		predictKNN(testSet, testLabels, responses, knn);
+		outputResults(responses, testLabels);
 	}
 
 	char in;
