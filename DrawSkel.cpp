@@ -1,3 +1,7 @@
+// Program to view a single skeleton binary file (can be many frames of data).
+// File name is hardcoded - so its a single file only.
+// Optional basic SVM train/test and output at the bottom.
+
 #include "opencv2/opencv.hpp"
 #include <opencv2/ml/ml.hpp>
 #include <iostream>
@@ -6,10 +10,80 @@
 #define NUM_JOINT_DIMENSIONS 4
 #define NUM_SKEL_JOINTS 20
 #define NUM_SKEL_TRACKED 6
-
+#define IMSIZE 300
 
 using namespace cv;
 using namespace std;
+
+Point getPointFromIndex(int indx, Mat &joints) {
+	float x = joints.at<float>(indx, 0);
+	float y = joints.at<float>(indx, 1);
+	x = x * (IMSIZE / 3) + (IMSIZE / 2);
+	y = y * -(IMSIZE / 3) + (IMSIZE / 2);
+	Point pt = Point((int)x, (int)y);
+
+	return pt;
+}
+
+// See MSDN's NUI_SKELETON_POSITION_INDEX Enumeration for reference
+void drawBones(Mat &edges, Mat &joints) {
+	Point pt1 = getPointFromIndex(0, joints);
+	Point pt2 = getPointFromIndex(1, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	pt1 = getPointFromIndex(1, joints);
+	pt2 = getPointFromIndex(2, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	// Head
+	pt1 = getPointFromIndex(2, joints);
+	pt2 = getPointFromIndex(3, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	// Left arm
+	pt1 = getPointFromIndex(2, joints);
+	pt2 = getPointFromIndex(4, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	for (int i = 4; i < 7; ++i) {
+		pt1 = getPointFromIndex(i, joints);
+		pt2 = getPointFromIndex(i + 1, joints);
+		line(edges, pt1, pt2, Scalar(255, 255, 100));
+	}
+
+	// Right arm
+	pt1 = getPointFromIndex(2, joints);
+	pt2 = getPointFromIndex(8, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	for (int i = 8; i < 11; ++i) {
+		pt1 = getPointFromIndex(i, joints);
+		pt2 = getPointFromIndex(i + 1, joints);
+		line(edges, pt1, pt2, Scalar(255, 255, 100));
+	}
+
+	// Left leg
+	pt1 = getPointFromIndex(0, joints);
+	pt2 = getPointFromIndex(12, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	for (int i = 12; i < 15; ++i) {
+		pt1 = getPointFromIndex(i, joints);
+		pt2 = getPointFromIndex(i + 1, joints);
+		line(edges, pt1, pt2, Scalar(255, 255, 100));
+	}
+
+	// Right leg
+	pt1 = getPointFromIndex(0, joints);
+	pt2 = getPointFromIndex(16, joints);
+	line(edges, pt1, pt2, Scalar(255, 255, 100));
+
+	for (int i = 16; i < 19; ++i) {
+		pt1 = getPointFromIndex(i, joints);
+		pt2 = getPointFromIndex(i + 1, joints);
+		line(edges, pt1, pt2, Scalar(255, 255, 100));
+	}
+}
 
 //TODO: Move most of the file data reading code to a new class/ file
 int main(int, char**) {
@@ -17,7 +91,8 @@ int main(int, char**) {
 	ifstream ifs_time; //TODO: rename these
 
 	// Open the binary file that contains joint data
-	ifs_joint.open("C:\\KinectData\\Backup\\Backup2\\Skel\\Joint_Position.binary", ios::in | ios::binary);
+	//ifs_joint.open("C:\\KinectData\\Backup\\Backup2\\Skel\\Joint_Position.binary", ios::in | ios::binary);
+	ifs_joint.open("D:\\ThesisData\\Data1\\Arm circle\\Skel\\Joint_Position.binary", ios::in | ios::binary);
 	if (ifs_joint.is_open()) {
 		cout << "yay" << endl;
 	}
@@ -66,15 +141,17 @@ int main(int, char**) {
 			k++;
 
 			// Matrices for display (image)
-			int imsize = 300;
-			Mat edges = Mat::eye(imsize, imsize, CV_8UC3); //TODO: doesnt need to be eye
+			Mat edges = Mat::eye(IMSIZE, IMSIZE, CV_8UC3); //TODO: doesnt need to be eye
+
+			//Draw all the bones.
+			drawBones(edges, joints);
 
 			// Loop to draw joints onto display Mat
 			for (int i = 0; i < NUM_SKEL_JOINTS; ++i) {
 				float x = joints.at<float>(i, 0);
 				float y = joints.at<float>(i, 1);
-				x = x * (imsize / 3) + (imsize / 2);
-				y = y * -(imsize / 3) + (imsize / 2);
+				x = x * (IMSIZE / 3) + (IMSIZE / 2);
+				y = y * -(IMSIZE / 3) + (IMSIZE / 2);
 				Point pt = Point((int)x, (int)y);
 				circle(edges, pt, 2, Scalar(255, 100, 100), -1);
 			}
@@ -85,7 +162,7 @@ int main(int, char**) {
 	}
 
 	//All joints
-	Mat samples = Mat(169, NUM_SKEL_JOINTS * NUM_JOINT_DIMENSIONS, CV_32F, allPositions);
+	/*Mat samples = Mat(169, NUM_SKEL_JOINTS * NUM_JOINT_DIMENSIONS, CV_32F, allPositions);
 	float labelArr[169]; //TODO: make robust for any size files
 	fill_n(labelArr, 169, 1.0);
 	for (int i = 85; i < 122; ++i) {
@@ -116,7 +193,7 @@ int main(int, char**) {
 	for (int i = 0; i < samples.size().height; ++i) {
 		response = SVM.predict(samples.row(i));
 		printf("%2.0f, ", response);
-	}
+	}*/
 
 	char waitin;
 	cin >> waitin;
