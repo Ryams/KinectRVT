@@ -1,3 +1,7 @@
+// Program to read in data saved with KinectStreamSaver, and then user goes through
+// each frame of data from that binary file and writes out selected exercise repetitions to multiple files
+// in that same directory.
+
 #include "opencv2/opencv.hpp"
 #include <iostream>
 #include <fstream>  
@@ -22,9 +26,24 @@ int main(int, char**) {
 	ofstream ofs_out_posi, ofs_out_orie, ofs_out_time;
 
 	String exerciseType;
+	String mainDirName;
 	int dataDirectoryNum = 1;
 	int skelTrackNum = 2;
 	char waitin;
+	char mainDir;
+
+	cout << "Enter which main directory to use. 'r' for RyanData, 't' for ThesisData: " << endl;
+	std::cin >> mainDir;
+
+	if (mainDir == 'r') {
+		mainDirName = "RyanData";
+	}
+	else {
+		mainDirName = "ThesisData";
+	}
+
+	cout << "Enter the number of the data directory" << endl;
+	std::cin >> dataDirectoryNum;
 
 	cout << "Enter 'j' jumping jack, 'i' arm circle, 'u' arm curl" << endl; //TODO: possible error checking on all these inputs
 	std::cin >> waitin;
@@ -39,17 +58,14 @@ int main(int, char**) {
 		exerciseType = "Arm circle";
 	}
 
-	cout << "Enter the number of the data directory" << endl;
-	std::cin >> dataDirectoryNum;
-
 	cout << "Enter the number of the skeleton tracking number" << endl;
 	std::cin >> skelTrackNum;
 
 	// Open the binary files that contain the data
-	ifs_joint_pos.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary", ios::in | ios::binary);
-	cout << "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary" << endl;
-	ifs_joint_orie.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Orientation.binary", ios::in | ios::binary);
-	ifs_time.open("D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
+	ifs_joint_pos.open("D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary", ios::in | ios::binary);
+	cout << "D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Position.binary" << endl;
+	ifs_joint_orie.open("D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\Joint_Orientation.binary", ios::in | ios::binary);
+	ifs_time.open("D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Skel\\liTimeStamp.binary", ios::in | ios::binary);
 	if (ifs_time.is_open() && ifs_joint_pos.is_open() && ifs_joint_orie.is_open()) {
 		cout << "yay x3" << endl;
 		cout << "Welcome to the file writer. Press any key to proceed to the next frame." << endl
@@ -72,9 +88,9 @@ int main(int, char**) {
 	long long allTimes[170][NUM_TIME_DIMS] = { 0 };
 	// Chose a large number suitable for sample frame sizes for this project. If larger number of frames needed, consider using dynamic allocation.
 
-	String fileOutBaseNamePosition = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Position";
-	String fileOutBaseNameOrientation = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Orientation";
-	String fileOutBaseNameTime = "D:\\ThesisData\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Time";
+	String fileOutBaseNamePosition = "D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Position";
+	String fileOutBaseNameOrientation = "D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Orientation";
+	String fileOutBaseNameTime = "D:\\" + mainDirName + "\\Data" + to_string(dataDirectoryNum) + "\\" + exerciseType + "\\Time";
 
 	int numFilesWritten = 0;
 
@@ -124,7 +140,17 @@ int main(int, char**) {
 			}
 
 			imshow("edges", edges);
-			char inChar = waitKey(0); // 30 frames per second?
+
+			if (frameNum < 100) {
+				cout << "        times: " << endl;
+				for (int i = 0; i < 5; ++i) {
+					cout << allTimes[0][i] << " ";
+				}
+				cout << endl;
+			}
+
+			char inChar = waitKey(0);
+
 			if (inChar == 's') {
 				++numFilesWritten;
 				cout << "Writing file " << numFilesWritten << ": " << endl << getFileName(fileOutBaseNamePosition, numFilesWritten) << endl
@@ -143,7 +169,7 @@ int main(int, char**) {
 				//Do some kind of mem-clear on allPoisitions, allOrientations, allTimes
 				memset((char *)allPositions, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 				memset((char *)allOrientations, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
-				memset((char *)allTimes, 0, sizeof(float) * NUM_TIME_DIMS * frameNum);
+				memset((char *)allTimes, 0, sizeof(float) * NUM_TIME_DIMS * frameNum); // TODO: this is wrong, should be timeFrameLength or sizeof(long long) * frameNum
 				frameNum = 0;
 
 				ofs_out_posi.close();
@@ -155,7 +181,7 @@ int main(int, char**) {
 				cout << "Discarded frames" << endl;
 				memset((char *)allPositions, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
 				memset((char *)allOrientations, 0, sizeof(float) * NUM_SKEL_JOINTS * NUM_JOINT_DIMS * frameNum);
-				memset((char *)allTimes, 0, sizeof(float) * NUM_TIME_DIMS * frameNum);
+				memset((char *)allTimes, 0, sizeof(float) * NUM_TIME_DIMS * frameNum); // TODO: this is wrong, should be timeFrameLength or sizeof(long long) * frameNum
 				frameNum = 0;
 			}
 		}
