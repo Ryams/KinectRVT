@@ -6,6 +6,7 @@
 #define NUM_SKEL_TRACKED 6
 #define NUM_TIME_DIMS 5
 #define TEST_SET_FRACTION .25
+#define NUM_TRIALS 5
 
 using namespace cv;
 using namespace std;
@@ -138,32 +139,42 @@ void predictKNN(Mat &testSet, Mat &testLabels, Mat &responses, CvKNearest &knn) 
 	knn.find_nearest(testSet, 10, responses, Mat(), Mat());
 }
 
-void outputResults(Mat &responses, Mat &testLabels) {
-	std::cout << endl << endl << "Prediction results: " << endl << endl;
-	cout << responses.t() << endl;
-	cout << endl;
-	cout << testLabels.t() << endl << endl;
-
-	Mat cmp(responses.size().height, responses.size().width, CV_32F);
+void aggregateResults(Mat &responses, Mat &testLabels, Mat &confusionMat) {
+	/*Mat cmp(responses.size().height, responses.size().width, CV_32F);
 	for (int i = 0; i < cmp.size().height; ++i) {
 		cmp.at<float>(i) = (responses.at<float>(i) == testLabels.at<float>(i) ? 0 : 1);
 	}
-	cout << cmp.t() << endl;
+	cout << cmp.t() << endl;*/
 
-	Mat confusionMat = Mat::zeros(4, 4, CV_32S);
+	//Mat confusionMat = Mat::zeros(4, 4, CV_32S);
 	for (int i = 0; i < responses.size().height; ++i) {
 		confusionMat.at<int>(testLabels.at<float>(i), responses.at<float>(i))++;
 	}
+	/*cout << endl << "confusion matrix: " << endl;
+	cout << confusionMat << endl;
+
+	int numCorrect = 0;
+	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
+		numCorrect += confusionMat.at<int>(i, i); // TODO: wrong
+	}
+	cout << "Correct: " << numCorrect << endl; // TODO: wrong
+	cout << "Total: " << responses.size().height << endl; // TODO: wrong
+	cout << "Accuracy: " << numCorrect * 1.0 / responses.size().height << endl; // TODO: wrong*/
+}
+
+void outputResults(Mat &confusionMat) {
 	cout << endl << "confusion matrix: " << endl;
 	cout << confusionMat << endl;
 
 	int numCorrect = 0;
 	for (int i = 0; i < 4; ++i) { //TODO: dont hardcode number of classes here
-		numCorrect += confusionMat.at<int>(i, i);
+		numCorrect += confusionMat.at<int>(i, i); // TODO: wrong
 	}
-	cout << "Correct: " << numCorrect << endl;
-	cout << "Total: " << responses.size().height << endl;
-	cout << "Accuracy: " << numCorrect * 1.0 / responses.size().height << endl;
+
+	cout << endl << "Num trials: " << NUM_TRIALS << endl;
+	cout << "Correct: " << numCorrect << endl; // TODO: wrong
+	cout << "Total: " << sum(confusionMat)[0] << endl; // TODO: wrong
+	cout << "Accuracy: " << numCorrect * 1.0 / sum(confusionMat)[0] << endl;
 }
 
 // Get samples and labels from xml, then extract features,
@@ -172,8 +183,9 @@ void outputResults(Mat &responses, Mat &testLabels) {
 int main(int, char**) {
 	Mat timeMat, posMat, oriMat, labels;
 	getSamples(timeMat, posMat, oriMat, labels);
+	Mat confusionMat = Mat::zeros(4, 4, CV_32S);
 
-	for (int i = 0; i < 3; ++i) { //TODO: no hardcoding
+	for (int i = 0; i < NUM_TRIALS; ++i) {
 		Mat features;
 		getRawOriFeature(features, timeMat, posMat, oriMat);
 
@@ -189,8 +201,12 @@ int main(int, char**) {
 		Mat responses;
 		//predictSVM(testSet, testLabels, responses, svm);
 		predictKNN(testSet, testLabels, responses, knn);
-		outputResults(responses, testLabels);
+
+		
+		aggregateResults(responses, testLabels, confusionMat);
 	}
+
+	outputResults(confusionMat);
 
 	char in;
 	cin >> in;
