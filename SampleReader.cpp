@@ -1,3 +1,7 @@
+// Program for viewing the segmented exercise repetitions, all at once.
+// Can only view one exercise type at a time.
+// No writing to files is done here.
+
 #include "opencv2/opencv.hpp"
 #include <iostream>
 #include <fstream>  
@@ -31,6 +35,18 @@ int main(int, char**) {
 	std::cin >> exerciseType;
 
 	String exerciseTypeName;
+	String mainDirName;
+	char mainDir;
+
+	cout << "Enter which main directory to use. 'r' for RyanData, 't' for ThesisData: " << endl;
+	std::cin >> mainDir;
+
+	if (mainDir == 'r') {
+		mainDirName = "RyanData";
+	}
+	else {
+		mainDirName = "ThesisData";
+	}
 
 	if (exerciseType == 'j') {
 		exerciseTypeName = "Jumping jack";
@@ -50,13 +66,14 @@ int main(int, char**) {
 
 	while (waitin == 'y') {
 		directoryNum++; //TODO: restructure code so that I increment this and numFilesRead at the ends of the loops
+		numFilesRead = 0;
 
 		while (waitin == 'y') {
 			numFilesRead++;
 
-			String fileNamePosition = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Position" + to_string(numFilesRead);
-			String fileNameOrientation = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Orientation" + to_string(numFilesRead);
-			String fileNameTime = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Time" + to_string(numFilesRead);
+			String fileNamePosition = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Position" + to_string(numFilesRead);
+			String fileNameOrientation = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Orientation" + to_string(numFilesRead);
+			String fileNameTime = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Time" + to_string(numFilesRead);
 
 			// Open the binary files that contain the data
 			positionInputFileStream.open(fileNamePosition, ios::in | ios::binary);
@@ -101,21 +118,6 @@ int main(int, char**) {
 						frameNum++;
 					}
 
-					if (frameNum < 3) {
-						cout << "        orientations: " << endl;
-						for (int i = 0; i < NUM_SKEL_JOINTS; ++i) {
-							for (int j = 0; j < NUM_JOINT_DIMS; ++j) {
-								cout << orientations[i][j] << " ";
-							}
-							cout << endl;
-						}
-						cout << "        times: " << endl;
-						for (int i = 0; i < 5; ++i) {
-							cout << times[i] << " ";
-						}
-						cout << endl;
-					}
-
 					// 2d openCV Mat to contain joint data
 					Mat joints = Mat(NUM_SKEL_JOINTS, NUM_JOINT_DIMS, CV_32F, positions);
 
@@ -136,7 +138,7 @@ int main(int, char**) {
 					}
 
 					imshow("edges", edges);
-					char inChar = waitKey(30); // 30 frames per second?
+					char inChar = waitKey(30);
 				}
 
 				positionInputFileStream.close();
@@ -148,7 +150,7 @@ int main(int, char**) {
 			std::cin >> waitin;
 		}
 
-		if (directoryEmpty) {
+		if (directoryEmpty || waitin != 'y') {
 			cout << "All directories and files read. Press any key to finish." << endl;
 			cin >> waitin;
 			break;
