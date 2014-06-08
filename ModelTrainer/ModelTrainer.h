@@ -6,5 +6,6 @@
 #define NUM_TIME_DIMS 5
 #define FRAME_CAP 1000
 #define IMZISE 300
+#define MAX_REPS 100
 
 void displayJoints(float *positions);

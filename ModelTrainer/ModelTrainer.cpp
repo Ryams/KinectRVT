@@ -1,3 +1,6 @@
+//This program is for saving xml and yml files of the accumulated samples. Also for SVM, although that
+// is likely to be moved to the ModelTester program, which will also contain feature extractor.
+
 #include "ModelTrainer.h"
 #include <opencv2/ml/ml.hpp>
 #include <iostream>
@@ -22,19 +25,35 @@ int main(int, char**) {
 	// Chose a large frame cap suitable for sample frame sizes for this project. If larger number of frames needed, consider using dynamic allocation.
 
 	char exerciseType = 'j';
+	char mainDir;
+	String exerciseTypeName;
+	String mainDirName;
+	int numReps;
+
+	cout << "Enter which main directory to use. 'r' for RyanData, 't' for ThesisData: " << endl;
+	std::cin >> mainDir;
+
+	if (mainDir == 'r') {
+		mainDirName = "RyanData";
+	}
+	else {
+		mainDirName = "ThesisData";
+	}
+
 	std::cout << "What type of exercise? 'u' arm curl, 'i' arm circle, 'j' jumping jack" << endl;
 	std::cin >> exerciseType;
 
-	String exerciseTypeName;
-
 	if (exerciseType == 'j') {
 		exerciseTypeName = "Jumping jack";
+		numReps = 33; // TODO: this is ONLY TRUE if main dir is RyanData. will break for ThesisData
 	}
 	else if (exerciseType == 'u') {
 		exerciseTypeName = "Arm curl";
+		numReps = 18; // TODO: this is ONLY TRUE if main dir is RyanData. will break for ThesisData
 	}
 	else {
 		exerciseTypeName = "Arm circle";
+		numReps = 18; // TODO: this is ONLY TRUE if main dir is RyanData. will break for ThesisData
 	}
 
 	int directoryNum = 0;
@@ -54,9 +73,9 @@ int main(int, char**) {
 			numFilesRead++;
 			frameNum = 0;
 
-			String fileNamePosition = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Position" + to_string(numFilesRead);
-			String fileNameOrientation = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Orientation" + to_string(numFilesRead);
-			String fileNameTime = "D:\\ThesisData\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Time" + to_string(numFilesRead);
+			String fileNamePosition = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Position" + to_string(numFilesRead);
+			String fileNameOrientation = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Orientation" + to_string(numFilesRead);
+			String fileNameTime = "D:\\" + mainDirName + "\\Data" + to_string(directoryNum) + "\\" + exerciseTypeName + "\\Time" + to_string(numFilesRead);
 
 			// Open the binary files that contain the data
 			positionInputFileStream.open(fileNamePosition, ios::in | ios::binary);
@@ -124,10 +143,10 @@ int main(int, char**) {
 	// Now we read in the labels per exercise repetition (rep).
 
 	ifstream labelFile;
-	labelFile.open("D:\\ThesisData\\Jumping jack CSVs\\labels.txt", ios::in);
-	float labelsFromFile[30]; // TODO: fix hardcoding
+	labelFile.open("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\labels.txt", ios::in); // TODO: only works for RyanData i think
+	float labelsFromFile[MAX_REPS]; // TODO: fix hardcoding
 
-	for (int i = 0; i < 30; ++i) {
+	for (int i = 0; i < numReps; ++i) { // TODO: fix hardcoding
 		labelFile >> labelsFromFile[i];
 	}
 
@@ -142,35 +161,33 @@ int main(int, char**) {
 	}
 
 	Mat labels = Mat(totalFrameNum, 1, CV_32F, labelsArr);
-
+	
 	//All joints
-	Mat samples = Mat(totalFrameNum, NUM_SKEL_JOINTS * NUM_JOINT_DIMS, CV_32F, orientationAccumulator); //TODO: have streamline for whichfeatures using
+	Mat pos_samples = Mat(totalFrameNum, NUM_SKEL_JOINTS * NUM_JOINT_DIMS, CV_32F, positionAccumulator);
+	Mat ori_samples = Mat(totalFrameNum, NUM_SKEL_JOINTS * NUM_JOINT_DIMS, CV_32F, orientationAccumulator);
 
+	// Commented out for safety reasons. But the code below is pretty much the point of this program.
+	/*__int32 truncTimes[FRAME_CAP][NUM_TIME_DIMS];
 	for (int i = 0; i < totalFrameNum; ++i) {
-		//cout << labels.at<float>(i) << ", ";
-		printf("%2.0f, ", labels.at<float>(i));
-	}
-	std::cout << endl;
-
-	// Set up SVM's parameters
-	CvSVMParams params;
-	params.svm_type = CvSVM::C_SVC;
-	params.kernel_type = CvSVM::LINEAR;
-	params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
-
-	CvSVM SVM;
-	SVM.train(samples, labels, Mat(), Mat(), params);
-	std::cout << endl << endl << "Prediction results: " << endl << endl;
-
-	float prevClass = 0;
-	float response = 0;
-
-	for (int i = 0; i < samples.size().height; ++i) {
-		response = SVM.predict(samples.row(i));
-		printf("%2.0f, ", response);
+		for (int j = 0; j < NUM_TIME_DIMS; ++j) {
+			truncTimes[i][j] = (__int32)timeAccumulator[i][j]; //TODO: be careful with typecasting into smaller data types, might not work on all machines?
+		}
 	}
 
-	cin >> waitin;
+	//Mat timesMat = Mat(totalFrameNum, NUM_TIME_DIMS, DataType<long long>::type, timeAccumulator);
+	Mat timesMat = Mat(totalFrameNum, NUM_TIME_DIMS, CV_32S, truncTimes);
+
+	cv::FileStorage file("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\time_samples.xml", cv::FileStorage::WRITE);
+	file << "times" << timesMat;
+	
+	cv::FileStorage file2("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\pos_samples.xml", cv::FileStorage::WRITE);
+	file2 << "positions" << pos_samples;
+
+	cv::FileStorage file3("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\ori_samples.xml", cv::FileStorage::WRITE);
+	file3 << "orientations" << ori_samples;
+
+	cv::FileStorage file4("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\all_labels.xml", cv::FileStorage::WRITE);
+	file4 << "labels" << labels;*/
 
 	cv::destroyAllWindows();
 
