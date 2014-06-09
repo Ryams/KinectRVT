@@ -1,3 +1,7 @@
+// This program is useful for retrieving a sample set and splitting it (shuffle and split)
+// as well as running that process for multiple iterations to get an average confusion matrix
+// for a particular exercise and statistical model. For using RyanData for training, see new program.
+
 #include "opencv2/opencv.hpp"
 #include <iostream>
 #include <fstream>  
@@ -20,6 +24,19 @@ void getSamples(Mat &m1, Mat &m2, Mat &m3, Mat &labels) {
 	std::cin >> exerciseType;
 
 	String _exerciseTypeName;
+	//TODO: not sure if this is relevant, may want to just make new program to train on my data, test on others
+	/*String mainDirName;
+	char mainDir;
+
+	cout << "Enter which main directory to use. 'r' for RyanData, 't' for ThesisData: " << endl;
+	std::cin >> mainDir;
+
+	if (mainDir == 'r') {
+		mainDirName = "RyanData";
+	}
+	else {
+		mainDirName = "ThesisData";
+	}*/
 
 	if (exerciseType == 'j') {
 		_exerciseTypeName = "Jumping jack";
@@ -34,13 +51,13 @@ void getSamples(Mat &m1, Mat &m2, Mat &m3, Mat &labels) {
 	const String exerciseTypeName = String(_exerciseTypeName); //TODO: I had to hack this because there was a weird bug where
 	// _exerciseTypeName was getting written over after calling FileStorage fs;
 
-	FileStorage fs("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\time_samples.xml", FileStorage::READ);
+	FileStorage fs("D:\\ThesisData\\" + exerciseTypeName + "\\time_samples.xml", FileStorage::READ);
 	fs.getFirstTopLevelNode() >> m1;
-	fs.open("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\pos_samples.xml", FileStorage::READ);
+	fs.open("D:\\ThesisData\\" + exerciseTypeName + "\\pos_samples.xml", FileStorage::READ);
 	fs.getFirstTopLevelNode() >> m2;
-	fs.open("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\ori_samples.xml", FileStorage::READ);
+	fs.open("D:\\ThesisData\\" + exerciseTypeName + "\\ori_samples.xml", FileStorage::READ);
 	fs.getFirstTopLevelNode() >> m3;
-	fs.open("D:\\ThesisData\\" + exerciseTypeName + " CSVs\\all_labels.xml", FileStorage::READ);
+	fs.open("D:\\ThesisData\\" + exerciseTypeName + "\\all_labels.xml", FileStorage::READ);
 	fs.getFirstTopLevelNode() >> labels;
 	fs.release();
 }
