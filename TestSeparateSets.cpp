@@ -164,6 +164,29 @@ String getExerciseTypeName() {
 	return _exerciseTypeName;
 }
 
+//Function to verify that everything looks normal...
+void seeAllMats(Mat trainTimeMat, Mat trainOriMat, Mat trainLabels, Mat trainFeatures, Mat testTimeMat, Mat testOriMat, Mat testLabels, Mat testFeatures, Mat responses, Mat confusionMat) {
+	cout << "trainTimeMat: " << endl << trainTimeMat.row(0) << endl << endl;
+
+	cout << "trainOriMat: " << endl << trainOriMat.row(0) << endl << endl;
+
+	cout << "trainLabels: " << endl << trainLabels << endl << endl;
+
+	cout << "trainFeatures: " << endl << trainFeatures.row(0) << endl << endl;
+
+	cout << "testTimeMat: " << endl << testTimeMat.row(0) << endl << endl;
+
+	cout << "testOriMat: " << endl << testOriMat.row(0) << endl << endl;
+
+	cout << "testLabels: " << endl << testLabels << endl << endl;
+
+	cout << "testFeatures: " << endl << testFeatures.row(0) << endl << endl;
+
+	cout << "responses: " << endl << responses << endl << endl;
+
+	cout << "confusionMat: " << endl << confusionMat << endl << endl;
+}
+
 // Get samples and labels from xml, then extract features,
 // shuffle and split the samples randomly intro training and test sets,
 // train the model, and predict outcomes from the test set, outputting classification rates.
@@ -171,12 +194,14 @@ int main(int, char**) {
 	const String exerciseTypeName = String(getExerciseTypeName());
 
 	Mat trainTimeMat, trainPosMat, trainOriMat, trainLabels, trainFeatures;
-	getSamples('t', exerciseTypeName, trainTimeMat, trainPosMat, trainOriMat, trainLabels);
+	getSamples('r', exerciseTypeName, trainTimeMat, trainPosMat, trainOriMat, trainLabels);
 	getRawOriFeature(trainFeatures, trainTimeMat, trainPosMat, trainOriMat);
+	//getRawPosFeature(trainFeatures, trainTimeMat, trainPosMat, trainOriMat);
 
 	Mat testTimeMat, testPosMat, testOriMat, testLabels, testFeatures;
-	getSamples('r', exerciseTypeName, testTimeMat, testPosMat, testOriMat, testLabels);
+	getSamples('t', exerciseTypeName, testTimeMat, testPosMat, testOriMat, testLabels);
 	getRawOriFeature(testFeatures, testTimeMat, testPosMat, testOriMat);
+	//getRawPosFeature(testFeatures, testTimeMat, testPosMat, testOriMat);
 
 	CvSVM svm;
 	trainSVMModel(trainFeatures, trainLabels, svm);
@@ -193,7 +218,8 @@ int main(int, char**) {
 	Mat confusionMat = Mat::zeros(4, 4, CV_32S);
 	aggregateResults(responses, testLabels, confusionMat);
 
-	outputResults(confusionMat);
+	//outputResults(confusionMat);
+	seeAllMats(trainTimeMat, trainOriMat, trainLabels, trainFeatures, testTimeMat, testOriMat, testLabels, testFeatures, responses, confusionMat);
 
 	char in;
 	cin >> in;
