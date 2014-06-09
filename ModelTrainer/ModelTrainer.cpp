@@ -1,4 +1,4 @@
-//This program is for saving xml and yml files of the accumulated samples. Also for SVM, although that
+//This program is for saving xml and yml files of the accumulated samples. For SVM, although that
 // is likely to be moved to the ModelTester program, which will also contain feature extractor.
 
 #include "ModelTrainer.h"
@@ -49,7 +49,12 @@ int main(int, char**) {
 	}
 	else if (exerciseType == 'u') {
 		exerciseTypeName = "Arm curl";
-		numReps = 18; // TODO: this is ONLY TRUE if main dir is RyanData. will break for ThesisData
+		if (mainDir == 'r') {
+			numReps = 18;
+		}
+		else {
+			numReps = 27;
+		}
 	}
 	else {
 		exerciseTypeName = "Arm circle";
@@ -143,7 +148,7 @@ int main(int, char**) {
 	// Now we read in the labels per exercise repetition (rep).
 
 	ifstream labelFile;
-	labelFile.open("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\labels.txt", ios::in); // TODO: only works for RyanData i think
+	labelFile.open("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\labels.txt", ios::in);
 	float labelsFromFile[MAX_REPS]; // TODO: fix hardcoding
 
 	for (int i = 0; i < numReps; ++i) { // TODO: fix hardcoding
@@ -161,7 +166,7 @@ int main(int, char**) {
 	}
 
 	Mat labels = Mat(totalFrameNum, 1, CV_32F, labelsArr);
-	
+
 	//All joints
 	Mat pos_samples = Mat(totalFrameNum, NUM_SKEL_JOINTS * NUM_JOINT_DIMS, CV_32F, positionAccumulator);
 	Mat ori_samples = Mat(totalFrameNum, NUM_SKEL_JOINTS * NUM_JOINT_DIMS, CV_32F, orientationAccumulator);
@@ -185,7 +190,7 @@ int main(int, char**) {
 
 	cv::FileStorage file3("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\ori_samples.xml", cv::FileStorage::WRITE);
 	file3 << "orientations" << ori_samples;
-
+	
 	cv::FileStorage file4("D:\\" + mainDirName + "\\" + exerciseTypeName + "\\all_labels.xml", cv::FileStorage::WRITE);
 	file4 << "labels" << labels;*/
 
